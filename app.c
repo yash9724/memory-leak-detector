@@ -49,9 +49,27 @@ int main(){
 
     print_struct_db(struct_db);
 
+    
+    /*Working with object database*/
+    /*Step 1 : Initialize a new Object database */
+    printf("\nWorking with object database");
     object_db_t *object_db = calloc(1, sizeof(object_db_t));
-    object_db->struct_db = struct_db;
+    printf("\nobject_db = %p   and    struct_db = %p",object_db,struct_db);
+    printf("\nMID");
+    object_db -> struct_db = struct_db;
+    printf("\nobject database initialized");
+    
+    /*Step 2 : Create some sample objects, equivalent to standard 
+     * calloc(1, sizeof(student_t))
+    */
+    student_t *yash = xcalloc(object_db, "student_t", 1);
+    printf("yash allocated");
+    student_t *aashu = xcalloc(object_db, "student_t", 1);
+    printf("aashu allocated");
+    emp_t *neeshu = xcalloc(object_db, "emp_t", 2);
+    printf("neeshu allocated");
+
+    print_obj_db(object_db);
 
     return 0;
-
 }

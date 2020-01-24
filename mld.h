@@ -1,4 +1,6 @@
 #ifndef __MLD__
+#define __MLD__
+
 #include<assert.h>
 #include<stdlib.h>
 #include<stdio.h>
@@ -20,6 +22,12 @@ typedef enum{
     DOUBLE,
     OBJ_STRUCT, /* any structure */
 }data_type_t;
+
+// use this enum to mark flags as true or false 
+typedef enum{
+    MLD_FALSE,
+    MLD_TRUE,
+}mld_boolean_t;
 
 #define GET_FIELD_OFFSET(struct_name, field_name) \
         (unsigned int)(&(((struct_name*)0)->field_name))
@@ -67,6 +75,9 @@ typedef struct _struct_db_{
 void print_struct_rec(struct_db_rec_t *struct_rec);
 void print_struct_db(struct_db_t *struct_db);
 
+/* Structure Record look up function*/
+static struct_db_rec_t * struct_db_look_up(struct_db_t*, char*);
+
 /* Function to add a structure record in structure database.
 *  Returns 0 on success, -1 on failure.
 */
@@ -102,7 +113,10 @@ struct _object_db_rec_{
     void *ptr;
     unsigned int units;
     struct_db_rec_t *struct_rec;
+    mld_boolean_t is_root;       /* is this object root */
+    mld_boolean_t is_visited;      /**/
 };
+
 
 typedef struct _object_db_{
     struct_db_t *struct_db;
@@ -110,9 +124,14 @@ typedef struct _object_db_{
     unsigned int count;
 }object_db_t;
 
+
+/* Object Record Look up function*/
+static object_db_rec_t *object_db_look_up(object_db_t*, void*);
+   
 /*Dumping Function*/
-void print_object_rec(object_db_rec_t *obj_rec, int i);
-void print_object_db(object_db_t *object_db);
+void print_obj_rec(object_db_rec_t *obj_rec, int i);
+void print_obj_db(object_db_t *object_db);
+
 
 /* Function to dynamically allocate memory to objects.
 * Besides allocating memory, xcalloc() will also perform
@@ -124,5 +143,13 @@ void print_object_db(object_db_t *object_db);
 * 3. Return the pointer to allocated memory.    
 */
 void* xcalloc(object_db_t *object_db, char* struct_name, int units);
+
+/* API's to register root object */
+void mld_register_global_object_as_root(object_db_t *object_db,
+                                        void *objptr,
+                                        char *struct_name,
+                                        unsigned int units);
+void mld_set_dynamic_object_a_root(object_db_t *object_db,
+                                   void *obj_ptr);
 
 #endif

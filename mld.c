@@ -1,16 +1,20 @@
 #include "mld.h"
 
 
-char *dtype[] = { "UINT8", "UINT32", "INT32", "CHAR", "OBJ_PTR","FLOAT", "DOUBLE","OBJ_STRUCT"};
+char *DTYPE[] = { "UINT8", "UINT32", "INT32", "CHAR", "OBJ_PTR","FLOAT", "DOUBLE","OBJ_STRUCT"};
 /* Printing functions */
 void print_struct_rec(struct_db_rec_t *struct_rec){
+
+    if(struct_rec == NULL)
+        return;
+
     printf("Structure Name = %s\t|",struct_rec->struct_name);
     printf("\tStructure Size = %d\t|",struct_rec->struct_size);
     printf("\tNo. of Fields = %d\n",struct_rec->n_fields);
     printf("Fields = \n");
     for(int i = 0 ; i < struct_rec->n_fields ; i++){
         printf("\t\tfname = %s\t|",struct_rec->fields_arr[i].fname);
-        printf("\tdtype = %s\t|",dtype[struct_rec->fields_arr[i].dtype]);
+        printf("\tdtype = %s\t|",DTYPE[struct_rec->fields_arr[i].dtype]);
         printf("\tsize = %u\t|",struct_rec->fields_arr[i].size);
         printf("\toffset = %u\t|",struct_rec->fields_arr[i].offset);
         printf("\tnested_struct = %s\t|",struct_rec->fields_arr[i].nested_struct_name);
@@ -51,9 +55,11 @@ int add_structure_to_struct_db(struct_db_t *struct_db,
                 return 0;
             }
 
+
 static void add_object_to_object_db(object_db_t *object_db, 
                                     void *ptr, int units,
-                                    struct_db_rec_t *struct_rec){
+                                    struct_db_rec_t *struct_rec,
+                                    mld_boolean_t is_root){
 
         /* check whether object already exists.
         *  If yes, then don't add it twice.
@@ -67,6 +73,7 @@ static void add_object_to_object_db(object_db_t *object_db,
         obj->ptr = ptr;
         obj->units = units;
         obj->struct_rec = struct_rec;
+        obj->is_root = is_root;
 
         object_db_rec_t* curr = object_db->head;
         
@@ -94,42 +101,87 @@ void* xcalloc(object_db_t *object_db,
                                             struct_name);
     assert(st);
     void *obj = calloc(units, sizeof(struct_name));
-    add_object_to_object_db(object_db, obj, units, st);
+    add_object_to_object_db(object_db, obj, units, st, MLD_FALSE); /* set objects as non-root by default*/
     return obj;
 }
 
-void print_obj_rec(object_rec_db_t *obj_rec, int i){
-    
 
+void print_obj_rec(object_db_rec_t *obj_rec, int i){
+    
+    if(!obj_rec)
+        return;
+    printf("%-3d ptr = %-10p | next = %-10p | units = %-4d | struct_name = %-10s | is_root = %s\n", 
+        i, obj_rec->ptr, obj_rec->next, obj_rec->units, obj_rec->struct_rec->struct_name, obj_rec->is_root ? "TRUE":"FALSE"); 
+    
 }
 
-void print_object_db(object_db_t *object_db){
 
+void print_obj_db(object_db_t *object_db){
+    object_db_rec_t *curr = object_db->head;
+    unsigned int i = 0;
+    printf("Printing OBJECT DATABASE\n");
+    for(; curr; curr = curr->next){
+        print_obj_rec(curr, i++);
+    }
 }
 
 
 static struct_db_rec_t * struct_db_look_up(struct_db_t *struct_db,
                                           char *struct_name){
-
-        struct_db_rec_t* curr = struct_db->head;
-        while(curr){
-            if(strncmp(curr->struct_name, struct_name, MAX_STRUCT_NAME_SIZE) == 0)
-                return curr;
-        }
+    struct_db_rec_t* curr = struct_db->head;
+    if(curr == NULL)
         return NULL;
+    while(curr){
+        if(strncmp(curr->struct_name, struct_name, MAX_STRUCT_NAME_SIZE) == 0)
+            return curr;
+        curr = curr->next;
     }
+    return NULL;
+}
 
 
 
 static object_db_rec_t *object_db_look_up(object_db_t *object_db,
                                           void *ptr){
-
-        object_db_rec_t *curr = object_db->db;
-        while(curr){
-            if(curr->ptr == ptr)
-                return curr;
-        }
+    object_db_rec_t *curr = object_db->head;
+    if(curr == NULL)
         return NULL;
+    while(curr){
+        if(curr->ptr == ptr)
+            return curr;
+        curr = curr->next;
     }
+    return NULL;
+}
+
+/* API's to register root object */
+
+/* The global object of application which is not registered 
+* created using xcalloc should be registered with object
+* database using below API
+*/
+void mld_register_global_object_as_root(object_db_t *object_db,
+                                        void *objptr,
+                                        char *struct_name,
+                                        unsigned int units){
+    /* check whether struct_name has been registered with struct db or not*/
+    struct_db_rec_t *struct_rec = struct_db_look_up(object_db->struct_db, struct_name);
+
+    assert(struct_rec);
+
+    /* create a new object rec and add it to object database */
+    add_object_to_object_db(object_db, objptr, units, struct_rec, MLD_TRUE);
+    
+}
+
+
+void mld_set_dynamic_object_a_root(object_db_t *object_db,
+                                   void *obj_ptr){
+
+    object_db_rec_t *obj_rec = object_db_look_up(object_db ,obj_ptr);
+    assert(obj_rec);
+    obj_rec -> is_root = MLD_TRUE;
+}
+                                        
 
                                
