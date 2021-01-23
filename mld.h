@@ -17,6 +17,7 @@ typedef enum{
     UINT32,
     INT32,
     CHAR,
+    VOID_PTR,   /* data type to identify void pointers*/ 
     OBJ_PTR,    /* pointer to object of any struct type */ 
     FLOAT,
     DOUBLE,
@@ -62,7 +63,7 @@ struct _struct_db_rec_t_{
     field_info_t *fields_arr;        
 };
 
-/* Finally the head of linked lists representing
+/* Head of linked lists representing
 * the structure database
 */
 
@@ -104,7 +105,7 @@ int add_structure_to_struct_db(struct_db_t *struct_db,
         }while(0);
 
         
-/* Object Database structure definitions*/
+// /* Object Database structure definitions*/
 
 typedef struct _object_db_rec_ object_db_rec_t;
 
@@ -114,7 +115,7 @@ struct _object_db_rec_{
     unsigned int units;
     struct_db_rec_t *struct_rec;
     mld_boolean_t is_root;       /* is this object root */
-    mld_boolean_t is_visited;      /**/
+    mld_boolean_t is_visited;     
 };
 
 
@@ -144,12 +145,21 @@ void print_obj_db(object_db_t *object_db);
 */
 void* xcalloc(object_db_t *object_db, char* struct_name, int units);
 
-/* API's to register root object */
+// /* API's to register root object */
 void mld_register_global_object_as_root(object_db_t *object_db,
                                         void *objptr,
                                         char *struct_name,
                                         unsigned int units);
-void mld_set_dynamic_object_a_root(object_db_t *object_db,
+void mld_set_dynamic_object_as_root(object_db_t *object_db,
                                    void *obj_ptr);
+
+
+// /* API's for MLD ALgorithm */
+void run_mld_algorithm(object_db_t *object_db);
+ 
+void report_leaked_objects(object_db_t *object_db);
+
+// void mld_init_primitive_data_types_support(struct_db_t *struct_db);
+
 
 #endif

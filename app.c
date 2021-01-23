@@ -21,7 +21,7 @@ typedef struct student_{
 int main(){
     /* Step 1: Initialize a new structure database */
     struct_db_t *struct_db = calloc(1,sizeof(struct_db_t));
-    
+    // mld_init_primitive_datatypes_support(struct_db);
 
     /* create structure record for structure emp_t and student_t */
     static field_info_t emp_fields[] = {
@@ -32,6 +32,8 @@ int main(){
                     FILL_FIELD_INFO(emp_t, mgr, OBJ_PTR, emp_t),
                     FILL_FIELD_INFO(emp_t, salary, FLOAT, 0)
                 };
+
+    /* register the structure in structure database*/            
 
     REG_STRUCT(struct_db, emp_t, emp_fields);
 
@@ -51,7 +53,7 @@ int main(){
 
     
     /*Working with object database*/
-    /*Step 1 : Initialize a new Object database */
+    /*Initialize a new Object database */
     printf("\nWorking with object database");
     object_db_t *object_db = calloc(1, sizeof(object_db_t));
     printf("\nobject_db = %p   and    struct_db = %p",object_db,struct_db);
@@ -63,13 +65,19 @@ int main(){
      * calloc(1, sizeof(student_t))
     */
     student_t *yash = xcalloc(object_db, "student_t", 1);
-    printf("yash allocated");
+    mld_set_dynamic_object_as_root(object_db, yash);
     student_t *aashu = xcalloc(object_db, "student_t", 1);
-    printf("aashu allocated");
+    strncpy(aashu->stud_name, "aashu", strlen("aashu"));
+    yash->best_colleague = aashu;
     emp_t *neeshu = xcalloc(object_db, "emp_t", 2);
-    printf("neeshu allocated");
+    mld_set_dynamic_object_as_root(object_db, neeshu);
+    
 
     print_obj_db(object_db);
+
+    run_mld_algorithm(object_db);
+    printf("Leaked Objects: \n");
+    report_leaked_objects(object_db);
 
     return 0;
 }
