@@ -21,7 +21,7 @@ typedef struct student_{
 int main(){
     /* Step 1: Initialize a new structure database */
     struct_db_t *struct_db = calloc(1,sizeof(struct_db_t));
-    // mld_init_primitive_datatypes_support(struct_db);
+    mld_init_primitive_datatypes_support(struct_db);
 
     /* create structure record for structure emp_t and student_t */
     static field_info_t emp_fields[] = {

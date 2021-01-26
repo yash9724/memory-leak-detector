@@ -28,20 +28,6 @@ Memory Leak Detector algorithm that we have developed here works on the principl
 MLD library will keep track of all the heap objects the application has created, and how various heap objects hold reference to one another.
 
 
-<!-- ## Library Components
-### 1. Databases
-This library uses two databases: 
-**Structure database:** To maintain information about all the structures the application is using.
-
-**Object database:** To maintain information about all the objects malloc'd by application.
-
-These databases are nothing but linked list.
-
-### 2. Memory Leak Detector Algorithm
-MLD library triggers this algorithm on object database which in turn uses structure database to find leaked objects. It is based on depth first search algorithm.   -->
-
-
-
 ## Implementation
 **1. Structure Database:** MLD library must know the information about all the structures being used by the application. This information is stored in structure database. This database is basically a linked list. Node of linked list and linked list is implemented as follows:
 
@@ -168,7 +154,7 @@ Our application must tell MLD library about all root objects it is using. For th
 
 1.  Global Root Objects: Globally declared objects. In below given example struct emp is global root object.
 
-```
+```C
 struct emp_t{
     // some fields
 };
@@ -181,7 +167,7 @@ int main(){
 
 Global Root Object can be registered using following function:
 
-```
+```C
 void mld_register_global_object_as_root(object_db_t *object_db,     // pointer to object database
                                         void *objptr,               // pointer to root object
                                         char *struct_name,          // name of structure of root object
@@ -192,31 +178,43 @@ void mld_register_global_object_as_root(object_db_t *object_db,     // pointer t
 
 
 2. Dynamic Root Objects: These are created using xcalloc().
-```
+```C
 emp_t *emp = xcalloc(object_db, "emp_t", 1);
 ```
 Here `emp` is Dynamic Root Object. xcalloc() will register this object in object database. But to mark it as root we need below given API. It will search an existing object database record entry and mark it as root.
 
-```
+```C
 void mld_set_dynamic_object_as_root(object_db_t *object_db,
                                    void *obj_ptr);          // pointer to root object
 ```
 
 NOTE: 1. Global objects are referred to as global variables in application, so global objects cannot be leaked. But we still need to put these global variables in object database because these global root objects are starting point for MLD algorithm.
 
-2. Although it is possible for Dynamic Root Objects to leak we assume they are never leaked. This is possible when they are not declared `const`.
-```
-    emp_t *emp = xcalloc();
-    emp = NULL;
-```
+    2. Although it is possible for Dynamic Root Objects to leak we assume they are never leaked. This is possible when they are not declared `const`.
+    ```C
+        emp_t *emp = xcalloc();
+        emp = NULL;
+    ```
 
 In above code snippet since emp was not `const` it was reassigned as NULL and is now leaked. But MLD library cannot identify it as it is declared as root, hence MLD algorithm can always reach it.
 
 
+**6. Primitive Objects:** If we want to dynamically allocate memory to primitive data types, then in xcalloc() pass 'X' in place of data type of object. Note that for this to work we need to call `mld_init_primitive_data_types_support(struct_db_t *struct_db)` as a part of structure registration process.
+
+```C
+    struct_db_t *struct_db = calloc(1,sizeof(struct_db_t));
+    mld_init_primitive_datatypes_support(struct_db);
+```
+
+
+## Limitations of MLD library (TODO)
+MLD library fails in following cases:
+1. Storing the pointer to non pointer data type.
+2. Indirect reference to objects.
+3. Does not support unions and embedded objects.
 
 ## How to use this library in C application
 Step 1 : Initialize a new structure database.  
-
 Step 2 : Create structure record for structure.  
 Step 3 : Register the structure in structure database.  
 
@@ -224,6 +222,6 @@ Step 3 : Register the structure in structure database.
 Step 1 : Initialize a new Object database.   
 Step 2 : Create some sample objects, equivalent to standard.  
      
-After this we can run MLD algorithm and detect leaked objects.
+After this we can run MLD algorithm and detect leaked objects.  
 app.c implements these steps.  
     
